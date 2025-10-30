@@ -4,7 +4,7 @@ export function createTaskRouter(): Router {
   const router = Router();
 
   router.get("/", async (_req: Request, res: Response) => {
-    return res.json([]); // placeholder
+    return res.json([]); // placeholde
   });
 
   router.get("/:id", async (_req: Request, res: Response) => {
