@@ -1,87 +1,25 @@
-import sqlite3 from 'sqlite3';
-import { promisify } from 'util';
-import { Task, SyncQueueItem } from '../types';
-
-const sqlite = sqlite3.verbose();
-
 export class Database {
-  private db: sqlite3.Database;
+  private data: Record<string, any[]> = {};
 
-  constructor(filename: string = ':memory:') {
-    this.db = new sqlite.Database(filename);
+  constructor() {
+    this.data["tasks"] = [];
   }
 
-  async initialize(): Promise<void> {
-    await this.createTables();
+  async insert(collection: string, item: any) {
+    this.data[collection].push(item);
+    return item;
   }
 
-  private async createTables(): Promise<void> {
-    const createTasksTable = `
-      CREATE TABLE IF NOT EXISTS tasks (
-        id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        description TEXT,
-        completed INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        is_deleted INTEGER DEFAULT 0,
-        sync_status TEXT DEFAULT 'pending',
-        server_id TEXT,
-        last_synced_at DATETIME
-      )
-    `;
-
-    const createSyncQueueTable = `
-      CREATE TABLE IF NOT EXISTS sync_queue (
-        id TEXT PRIMARY KEY,
-        task_id TEXT NOT NULL,
-        operation TEXT NOT NULL,
-        data TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        retry_count INTEGER DEFAULT 0,
-        error_message TEXT,
-        FOREIGN KEY (task_id) REFERENCES tasks(id)
-      )
-    `;
-
-    await this.run(createTasksTable);
-    await this.run(createSyncQueueTable);
+  async findById(collection: string, id: string) {
+    return this.data[collection].find(item => item.id === id) || null;
   }
 
-  // Helper methods
-  run(sql: string, params: any[] = []): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.db.run(sql, params, (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
+  async findAll(collection: string) {
+    return this.data[collection];
   }
 
-  get(sql: string, params: any[] = []): Promise<any> {
-    return new Promise((resolve, reject) => {
-      this.db.get(sql, params, (err, row) => {
-        if (err) reject(err);
-        else resolve(row);
-      });
-    });
-  }
-
-  all(sql: string, params: any[] = []): Promise<any[]> {
-    return new Promise((resolve, reject) => {
-      this.db.all(sql, params, (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-      });
-    });
-  }
-
-  close(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.db.close((err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
+  async update(collection: string, id: string, newData: any) {
+    const index = this.data[collection].findIndex(item => item.id === id);
+    if (index !== -1) this.data[collection][index] = newData;
   }
 }

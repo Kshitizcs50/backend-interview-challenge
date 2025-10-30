@@ -1,56 +1,57 @@
-import { v4 as uuidv4 } from 'uuid';
-import { Task } from '../types';
-import { Database } from '../db/database';
+// src/services/taskService.ts
+import { Database } from "../db/database";
+import { Task } from "../types";
 
 export class TaskService {
-  constructor(private db: Database) {}
+  private db: Database;
 
-  async createTask(taskData: Partial<Task>): Promise<Task> {
-    // TODO: Implement task creation
-    // 1. Generate UUID for the task
-    // 2. Set default values (completed: false, is_deleted: false)
-    // 3. Set sync_status to 'pending'
-    // 4. Insert into database
-    // 5. Add to sync queue
-    throw new Error('Not implemented');
+  constructor(db: Database) {
+    this.db = db;
   }
 
+  // CREATE a task
+  async createTask(task: Task): Promise<Task> {
+    return await this.db.insert("tasks", task);
+  }
+
+  // UPDATE a task
   async updateTask(id: string, updates: Partial<Task>): Promise<Task | null> {
-    // TODO: Implement task update
-    // 1. Check if task exists
-    // 2. Update task in database
-    // 3. Update updated_at timestamp
-    // 4. Set sync_status to 'pending'
-    // 5. Add to sync queue
-    throw new Error('Not implemented');
+    const existing = await this.db.findById("tasks", id);
+    if (!existing || existing.is_deleted) return null;
+
+    const updated = { ...existing, ...updates };
+    await this.db.update("tasks", id, updated);
+    return updated;
   }
 
+  // DELETE (soft delete)
   async deleteTask(id: string): Promise<boolean> {
-    // TODO: Implement soft delete
-    // 1. Check if task exists
-    // 2. Set is_deleted to true
-    // 3. Update updated_at timestamp
-    // 4. Set sync_status to 'pending'
-    // 5. Add to sync queue
-    throw new Error('Not implemented');
+    const existing = await this.db.findById("tasks", id);
+    if (!existing) return false;
+
+    existing.is_deleted = true;
+    await this.db.update("tasks", id, existing);
+    return true;
   }
 
+  // GET a single task
   async getTask(id: string): Promise<Task | null> {
-    // TODO: Implement get single task
-    // 1. Query database for task by id
-    // 2. Return null if not found or is_deleted is true
-    throw new Error('Not implemented');
+    const task = await this.db.findById("tasks", id);
+    if (!task || task.is_deleted) return null;
+    return task;
   }
 
+  // GET all non-deleted tasks
   async getAllTasks(): Promise<Task[]> {
-    // TODO: Implement get all non-deleted tasks
-    // 1. Query database for all tasks where is_deleted = false
-    // 2. Return array of tasks
-    throw new Error('Not implemented');
+    const tasks = await this.db.findAll("tasks");
+    return tasks.filter(t => !t.is_deleted);
   }
 
+  // GET tasks that need sync
   async getTasksNeedingSync(): Promise<Task[]> {
-    // TODO: Get all tasks with sync_status = 'pending' or 'error'
-    throw new Error('Not implemented');
+    const tasks = await this.db.findAll("tasks");
+    return tasks.filter(
+      t => t.sync_status === "pending" || t.sync_status === "error"
+    );
   }
 }
