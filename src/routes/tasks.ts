@@ -20,7 +20,7 @@ export function createTaskRouter(): Router {
   });
 
   router.delete("/:id", async (_req: Request, res: Response) => {
-    return res.status(501).json({ error: "Not implemented" });
+    return res.status(501).json({ error: "Not implented" });
   });
 
   return router;
